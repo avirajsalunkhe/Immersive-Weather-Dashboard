@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Immersive Weather Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    body { font-family: 'Inter', sans-serif; background:#000; color:#fff; margin:0; overflow: hidden; }
+    #weather-animation-bg{position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:-1;transition:opacity .8s;opacity:0}
+    canvas{display:block}
+    .weather-card{background:rgba(0,0,0,0.2);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.1)}
+    .scroll-container::-webkit-scrollbar{height:6px}
+    .scroll-container::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);border-radius:10px}
+  </style>
+</head>
+<body>
+  <div id="weather-animation-bg"><canvas id="weather-canvas"></canvas></div>
+
+  <main class="h-screen w-screen overflow-y-auto flex items-start justify-center p-4 md:p-6">
+    <div class="w-full max-w-4xl pb-16">
+      <div class="flex gap-2 mb-6">
+        <input id="city-input" class="flex-1 px-4 py-2 rounded-l-md text-black bg-white/90 focus:ring-2 focus:ring-sky-400 focus:outline-none placeholder:text-gray-500" placeholder="Enter city name..." />
+        <button id="search-btn" class="px-4 py-2 bg-sky-600 rounded-r-md hover:bg-sky-500 transition-colors">Search</button>
+      </div>
+
+      <div id="loading-state" class="text-center mb-6">
+        <p id="loading-text">Requesting location...</p>
+        <p class="text-sm text-white/70 animate-pulse">Waiting for response</p>
+      </div>
+
+      <div id="error-state" class="hidden weather-card rounded-2xl p-6 mb-6">
+        <p id="error-message" class="text-red-300 font-semibold">Error</p>
+        <p id="error-detail" class="text-white/70 mt-2"></p>
+      </div>
+
+      <div id="data-container" class="hidden space-y-6">
+        <section class="weather-card rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div class="text-center md:text-left">
+            <h1 id="location-name" class="text-3xl font-bold">--</h1>
+            <p id="current-time" class="text-white/70">--</p>
+          </div>
+          <div class="flex items-center gap-4">
+            <img id="current-icon" src="" alt="icon" class="w-20 h-20"/>
+            <div class="">
+              <p class="text-5xl font-bold"><span id="current-temp">--</span>°</p>
+              <p id="current-condition" class="capitalize">--</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="weather-card rounded-2xl p-6">
+          <h3 class="text-sm text-white/70 uppercase mb-4">Hourly Forecast</h3>
+          <div id="hourly-forecast-container" class="flex gap-4 overflow-x-auto scroll-container pb-4"></div>
+        </section>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <section class="weather-card rounded-2xl p-6 lg:col-span-2">
+            <h3 class="text-sm text-white/70 uppercase mb-4">7-Day Forecast</h3>
+            <div id="daily-forecast-container" class="space-y-3"></div>
+          </section>
+
+          <div class="space-y-6">
+            <section class="weather-card rounded-2xl p-6">
+              <h3 class="text-sm text-white/70 uppercase mb-4">Sunrise & Sunset</h3>
+              <div class="flex justify-between items-center">
+                <div class="text-center"><p class="text-2xl">🌅</p><p id="sunrise-time">--</p></div>
+                <div class="text-center"><p class="text-2xl">🌇</p><p id="sunset-time">--</p></div>
+              </div>
+            </section>
+
+            <section class="weather-card rounded-2xl p-6">
+              <h3 class="text-sm text-white/70 uppercase mb-4">Current Details</h3>
+              <div class="space-y-2">
+                <div class="flex justify-between"><span>Feels like</span><strong id="feelslike-temp">--°</strong></div>
+                <div class="flex justify-between"><span>Humidity</span><strong id="humidity">--%</strong></div>
+                <div class="flex justify-between"><span>Wind</span><strong id="wind-speed">-- km/h</strong></div>
+                <div class="flex justify-between"><span>UV Index</span><strong id="uv-index">--</strong></div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer class="fixed bottom-0 left-0 right-0 p-4 text-center text-xs text-white/40 backdrop-blur-sm">
+    <p>
+      &copy; 2025 
+      <a href="https://github.com/avirajsalunkhe" target="_blank" rel="noopener noreferrer" class="font-semibold text-white/60 hover:text-white transition-colors">
+        Aviraj Salunkhe
+      </a>. All Rights Reserved.
+    </p>
+  </footer>
+  </main>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // ====== CONFIGURATION ======
+    const API_KEY = '1895874867744ad9b14221830252809'; // <-- PASTE YOUR WeatherAPI.com KEY HERE
+    const FALLBACK_CITY = 'Pune';
+
+    // ====== ELEMENT REFERENCES ======
+    const loadingState = document.getElementById('loading-state'),
+          loadingText = document.getElementById('loading-text'),
+          errorState = document.getElementById('error-state'),
+          errorMessage = document.getElementById('error-message'),
+          errorDetail = document.getElementById('error-detail'),
+          dataContainer = document.getElementById('data-container'),
+          cityInput = document.getElementById('city-input'),
+          searchBtn = document.getElementById('search-btn'),
+          locationName = document.getElementById('location-name'),
+          currentTime = document.getElementById('current-time'),
+          currentIcon = document.getElementById('current-icon'),
+          currentTemp = document.getElementById('current-temp'),
+          currentCondition = document.getElementById('current-condition'),
+          hourlyContainer = document.getElementById('hourly-forecast-container'),
+          dailyContainer = document.getElementById('daily-forecast-container'),
+          sunriseTime = document.getElementById('sunrise-time'),
+          sunsetTime = document.getElementById('sunset-time'),
+          feelslikeTemp = document.getElementById('feelslike-temp'),
+          humidity = document.getElementById('humidity'),
+          windSpeed = document.getElementById('wind-speed'),
+          uvIndex = document.getElementById('uv-index');
+
+    const canvas = document.getElementById('weather-canvas'),
+          ctx = canvas.getContext('2d'),
+          animationBg = document.getElementById('weather-animation-bg');
+    let animationFrameId = null;
+
+    // ====== CORE LOGIC ======
+    async function startApp() {
+        if (!API_KEY || API_KEY === 'YOUR_API_KEY_HERE') {
+            showError("API Key Missing", "Please add your key from WeatherAPI.com to the script.");
+            return;
+        }
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    showLoading('Fetching weather data...');
+                    fetchWeatherByCoords(pos.coords.latitude, pos.coords.longitude)
+                        .then(updateUI)
+                        .catch(err => {
+                            console.warn("Geolocation fetch failed, using fallback city.");
+                            showLoading(`Fetching weather for ${FALLBACK_CITY}...`);
+                            fetchWeatherByCity(FALLBACK_CITY).then(updateUI).catch(err => showError('Failed to fetch data', err.message));
+                        });
+                },
+                () => {
+                    showLoading(`Fetching weather for ${FALLBACK_CITY}...`);
+                    fetchWeatherByCity(FALLBACK_CITY).then(updateUI).catch(err => showError('Failed to fetch data', err.message));
+                }
+            );
+        } else {
+            showLoading(`Fetching weather for ${FALLBACK_CITY}...`);
+            fetchWeatherByCity(FALLBACK_CITY).then(updateUI).catch(err => showError('Failed to fetch data', err.message));
+        }
+    }
+
+    async function handleSearch() {
+        const city = cityInput.value.trim();
+        if (!city) { cityInput.focus(); return; }
+        showLoading(`Searching for ${city}...`);
+        try {
+            const data = await fetchWeatherByCity(city);
+            updateUI(data);
+        } catch (err) {
+            showError('Search Failed', err.message || 'Could not find the specified city.');
+        }
+    }
+
+    // ====== FETCH & UI HELPERS ======
+    async function safeFetchJSON(url) {
+        const res = await fetch(url);
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => null);
+            throw new Error(errorData?.error?.message || `HTTP error: ${res.status}`);
+        }
+        return res.json();
+    }
+    const fetchWeatherByCoords = (lat, lon) => safeFetchJSON(`https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${lat},${lon}&days=7`);
+    const fetchWeatherByCity = (city) => safeFetchJSON(`https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=${encodeURIComponent(city)}&days=7`);
+
+    const showLoading = (text) => { loadingState.classList.remove('hidden'); loadingText.textContent = text; errorState.classList.add('hidden'); dataContainer.classList.add('hidden'); };
+    const showError = (title, detail) => { loadingState.classList.add('hidden'); errorState.classList.remove('hidden'); dataContainer.classList.add('hidden'); errorMessage.textContent = title; errorDetail.textContent = detail; };
+    const showData = () => { loadingState.classList.add('hidden'); errorState.classList.add('hidden'); dataContainer.classList.remove('hidden'); };
+
+    function updateUI(data) {
+        if (!data?.current || !data?.location) { showError('Invalid API response', 'Data is missing.'); return; }
+        showData();
+
+        const animationArgs = {
+            condition: data.current.condition?.text || 'Unknown',
+            is_day: data.current.is_day,
+            astro: data.forecast.forecastday[0]?.astro,
+            localtime_epoch: data.location.localtime_epoch,
+            wind_kph: data.current.wind_kph
+        };
+        
+        setWeatherAnimation(animationArgs);
+
+        locationName.textContent = `${data.location.name}, ${data.location.country}`;
+        currentTime.textContent = new Date(data.location.localtime_epoch * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        currentIcon.src = `https:${data.current.condition.icon}`;
+        currentTemp.textContent = Math.round(data.current.temp_c);
+        currentCondition.textContent = animationArgs.condition;
+        feelslikeTemp.textContent = `${Math.round(data.current.feelslike_c)}°`;
+        humidity.textContent = `${data.current.humidity}%`;
+        windSpeed.textContent = `${data.current.wind_kph} km/h`;
+        uvIndex.textContent = data.current.uv;
+        sunriseTime.textContent = animationArgs.astro.sunrise;
+        sunsetTime.textContent = animationArgs.astro.sunset;
+        populateHourly(data.forecast.forecastday[0]?.hour, data.location.localtime_epoch);
+        populateDaily(data.forecast.forecastday);
+    }
+    
+    function populateHourly(hourlyData, nowEpoch) { 
+        hourlyContainer.innerHTML = '';
+        if (!Array.isArray(hourlyData) || hourlyData.length === 0) return;
+        const currentHour = new Date(nowEpoch * 1000).getHours();
+        const relevantHours = hourlyData.filter(h => new Date(h.time_epoch * 1000).getHours() >= currentHour).slice(0, 24);
+        relevantHours.forEach(h => {
+            const el = document.createElement('div');
+            el.className = 'flex flex-col items-center text-center flex-shrink-0 w-16';
+            const time = new Date(h.time_epoch * 1000).toLocaleTimeString([], { hour: 'numeric', hour12: true });
+            el.innerHTML = `<p class="text-sm text-white/70">${time}</p><img src="https:${h.condition.icon}" class="w-10 h-10" alt="${h.condition.text}"><p class="font-semibold">${Math.round(h.temp_c)}°</p>`;
+            hourlyContainer.appendChild(el);
+        });
+    }
+
+    function populateDaily(days) { 
+        dailyContainer.innerHTML = '';
+        if (!Array.isArray(days)) return;
+        days.forEach((d, i) => {
+            const el = document.createElement('div');
+            el.className = 'flex items-center justify-between';
+            const dayName = i === 0 ? 'Today' : new Date(d.date_epoch * 1000).toLocaleDateString([], { weekday: 'long' });
+            el.innerHTML = `<p class="font-medium w-1/4">${dayName}</p><img src="https:${d.day.condition.icon}" class="w-8 h-8"><div class="w-1/2 flex items-center justify-end gap-2"><span class="text-white/70">${Math.round(d.day.mintemp_c)}°</span><div class="w-full h-1 bg-white/10 rounded-full"><div class="h-1 rounded-full" style="width:100%;background:linear-gradient(90deg,#06b6d4,#3b82f6)"></div></div><strong>${Math.round(d.day.maxtemp_c)}°</strong></div>`;
+            dailyContainer.appendChild(el);
+        });
+    }
+
+    // ====== EVENT LISTENERS ======
+    searchBtn.addEventListener('click', handleSearch);
+    cityInput.addEventListener('keydown', (e) => e.key === 'Enter' && handleSearch());
+    window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+    // ===================================
+    // ====== ENHANCED ANIMATION SYSTEM (Smoothness Focused) ======
+    // ===================================
+
+    function clearAnimation() {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        animationBg.style.opacity = '0';
+    }
+
+    function setWeatherAnimation(args) {
+        clearAnimation();
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        animationBg.style.opacity = '1';
+
+        const lower = args.condition.toLowerCase();
+        
+        if (lower.includes('thunder')) animateThunderstorm(args);
+        else if (lower.includes('rain') || lower.includes('drizzle')) animateRain(args);
+        else if (lower.includes('snow') || lower.includes('sleet') || lower.includes('blizzard')) animateSnow(args);
+        else if (lower.includes('mist') || lower.includes('fog') || lower.includes('haze')) animateFog(args);
+        else if (lower.includes('cloud') || lower.includes('overcast')) animateClouds(args);
+        else animateClearSky(args);
+    }
+
+    // --- Helper function to parse "hh:mm AM/PM" into a proper Date object
+    function parseAstroTime(timeStr, locationDate) {
+        if (!timeStr || !locationDate) return null;
+        const date = new Date(locationDate);
+        const [time, modifier] = timeStr.split(' ');
+        let [hours, minutes] = time.split(':').map(Number);
+        if (modifier === 'PM' && hours < 12) hours += 12;
+        if (modifier === 'AM' && hours === 12) hours = 0;
+        date.setHours(hours, minutes, 0, 0);
+        return date;
+    }
+
+    // --- Helper to interpolate between two RGB colors
+    function lerpColor(c1, c2, factor) {
+        const r = Math.round(c1[0] + factor * (c2[0] - c1[0]));
+        const g = Math.round(c1[1] + factor * (c2[1] - c1[1]));
+        const b = Math.round(c1[2] + factor * (c2[2] - c1[2]));
+        return `rgb(${r},${g},${b})`;
+    }
+
+    // --- Central function to draw sky, sun, and moon
+    function drawSkyAndCelestialBody(args) {
+        const { is_day, astro, localtime_epoch } = args;
+        const now = new Date(localtime_epoch * 1000);
+        
+        const sunrise = parseAstroTime(astro.sunrise, now);
+        const sunset = parseAstroTime(astro.sunset, now);
+
+        const PALETTES = {
+            // Softer, more natural transitions
+            sunrise: { top: [255, 150, 80], bottom: [255, 220, 160] }, // Warm oranges/pinks
+            day:     { top: [100, 180, 255], bottom: [160, 220, 255] }, // Brighter blues
+            sunset:  { top: [255, 100, 100], bottom: [255, 170, 120] }, // Deep reds/oranges
+            night:   { top: [15, 20, 40],   bottom: [50, 60, 90] }    // Darker, richer blues
+        };
+
+        let topColor, bottomColor;
+        let sunProgress = -1; // 0 to 1 for sun's journey
+        if (sunrise && sunset && now >= sunrise && now <= sunset) {
+            sunProgress = (now - sunrise) / (sunset - sunrise);
+        }
+
+        const transitionPhase = 0.20; // 20% of day for rise/set transition
+        if (sunProgress >= 0 && sunProgress <= 1) { // Day
+            if(sunProgress < transitionPhase) { // Sunrise
+                const factor = sunProgress / transitionPhase;
+                topColor = lerpColor(PALETTES.sunrise.top, PALETTES.day.top, factor);
+                bottomColor = lerpColor(PALETTES.sunrise.bottom, PALETTES.day.bottom, factor);
+            } else if (sunProgress > (1 - transitionPhase)) { // Sunset
+                const factor = (sunProgress - (1 - transitionPhase)) / transitionPhase;
+                topColor = lerpColor(PALETTES.day.top, PALETTES.sunset.top, factor);
+                bottomColor = lerpColor(PALETTES.day.bottom, PALETTES.sunset.bottom, factor);
+            } else { // Midday
+                topColor = `rgb(${PALETTES.day.top.join(',')})`;
+                bottomColor = `rgb(${PALETTES.day.bottom.join(',')})`;
+            }
+        } else { // Night
+            topColor = `rgb(${PALETTES.night.top.join(',')})`;
+            bottomColor = `rgb(${PALETTES.night.bottom.join(',')})`;
+        }
+
+        const grd = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        grd.addColorStop(0, topColor);
+        grd.addColorStop(1, bottomColor);
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // --- Sun/Moon Drawing ---
+        let celestialX, celestialY;
+        const baseSize = 40;
+
+        if (sunProgress >= 0 && sunProgress <= 1) { // Draw Sun
+            celestialX = sunProgress * canvas.width;
+            celestialY = (canvas.height * 0.8) - (Math.sin(sunProgress * Math.PI) * canvas.height * 0.75); // Flatter arc
+            
+            const pulse = Math.sin(Date.now() / 1000) * 3 + baseSize; // Slower, softer pulse
+            
+            // Soft glow
+            const sunGlow = ctx.createRadialGradient(celestialX, celestialY, pulse * 0.8, celestialX, celestialY, pulse + 60);
+            sunGlow.addColorStop(0, 'rgba(255, 240, 180, 0.6)');
+            sunGlow.addColorStop(1, 'rgba(255, 210, 0, 0)');
+            ctx.fillStyle = sunGlow;
+            ctx.fillRect(celestialX - (pulse+60), celestialY - (pulse+60), (pulse+60)*2, (pulse+60)*2);
+
+            ctx.fillStyle = '#FFD700'; // Sun color
+            ctx.beginPath();
+            ctx.arc(celestialX, celestialY, pulse, 0, Math.PI * 2);
+            ctx.fill();
+
+        } else { // Draw Moon
+            // Simplified moon path for smooth continuous movement
+            const nightProgress = (now.getHours() + now.getMinutes()/60) / 24; // 0 to 1 over 24 hours
+            celestialX = nightProgress * canvas.width;
+            celestialY = (canvas.height * 0.25) + (Math.cos(nightProgress * Math.PI * 2) * canvas.height * 0.1); // Gentle up/down
+            
+            // Ethereal glow
+            const moonGlow = ctx.createRadialGradient(celestialX, celestialY, baseSize * 0.8, celestialX, celestialY, baseSize + 40);
+            moonGlow.addColorStop(0, 'rgba(220, 230, 255, 0.4)');
+            moonGlow.addColorStop(1, 'rgba(180, 200, 255, 0)');
+            ctx.fillStyle = moonGlow;
+            ctx.fillRect(celestialX - (baseSize+40), celestialY - (baseSize+40), (baseSize+40)*2, (baseSize+40)*2);
+
+            ctx.fillStyle = '#F0F2EB'; // Moon color
+            ctx.beginPath();
+            ctx.arc(celestialX, celestialY, baseSize, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Very subtle texture, not complex craters for smoothness
+            ctx.fillStyle = 'rgba(0,0,0,0.08)';
+            ctx.beginPath(); ctx.arc(celestialX + baseSize*0.3, celestialY + baseSize*0.1, baseSize*0.2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(celestialX - baseSize*0.2, celestialY - baseSize*0.2, baseSize*0.15, 0, Math.PI*2); ctx.fill();
+        }
+        return { celestialX, celestialY };
+    }
+
+    // --- Specific weather animations ---
+    
+    function animateClearSky(args) {
+        let stars = args.is_day ? [] : Array.from({length: 100}, () => ({ // Fewer stars for performance
+            x: Math.random() * canvas.width, y: Math.random() * canvas.height, 
+            r: Math.random() * 1.5 + 0.5,
+            o: Math.random() * 0.5 + 0.3 // More subtle twinkle
+        }));
+        function draw() {
+            drawSkyAndCelestialBody(args);
+            if (!args.is_day) {
+                stars.forEach(s => {
+                    s.o += (Math.random() - 0.5) * 0.05; // Slower fade
+                    s.o = Math.max(0.2, Math.min(0.8, s.o)); // Keep opacity within a range
+                    ctx.fillStyle = `rgba(255, 255, 255, ${s.o})`;
+                    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+                });
+            }
+            animationFrameId = requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+    function animateClouds(args) {
+        let clouds = Array.from({length:15},()=>({ // Fewer clouds for smoother drift
+            x:Math.random()*canvas.width, y:Math.random()*(canvas.height*0.3),
+            r:Math.random()*70+60, // Larger, puffier clouds
+            s:Math.random()*0.2+0.08 // Slower, smoother drift speed
+        }));
+        function draw() {
+            const celestial = drawSkyAndCelestialBody(args);
+            
+            clouds.forEach(c => {
+                // Soft gradient fill for volumetric effect
+                const grad = ctx.createRadialGradient(c.x, c.y, c.r * 0.5, c.x, c.y, c.r);
+                const cloudBaseColor = args.is_day ? 'rgba(255,255,255,0.8)' : 'rgba(180,190,200,0.4)';
+                const cloudEdgeColor = args.is_day ? 'rgba(255,255,255,0.3)' : 'rgba(180,190,200,0.1)';
+                grad.addColorStop(0, cloudBaseColor);
+                grad.addColorStop(1, cloudEdgeColor);
+                ctx.fillStyle = grad;
+
+                ctx.beginPath();
+                ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+                ctx.arc(c.x + c.r * 0.7, c.y, c.r * 0.8, 0, Math.PI * 2);
+                ctx.arc(c.x - c.r * 0.7, c.y, c.r * 0.9, 0, Math.PI * 2);
+                ctx.arc(c.x + c.r * 0.3, c.y - c.r * 0.5, c.r * 0.6, 0, Math.PI * 2);
+                ctx.arc(c.x - c.r * 0.4, c.y - c.r * 0.6, c.r * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                c.x += c.s;
+                if(c.x > canvas.width + c.r*2) c.x = -c.r*2;
+            });
+            animationFrameId = requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+    function animateRain(args) {
+        const windX = (args.wind_kph || 0) * 0.08; // Stronger wind influence
+        const gravity = 0.6; // Consistent gravity
+        let particles = Array.from({length: 300}, () => ({ // Reduced count for performance
+            x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+            length: Math.random()*15 + 10, // Longer drops
+            vx: windX + (Math.random()-0.5)*0.8, // Initial horizontal velocity
+            vy: Math.random()*8+12, // Initial vertical velocity
+            splashes: []
+        }));
+
+        function draw() {
+            drawSkyAndCelestialBody(args);
+            ctx.strokeStyle='rgba(174,194,224,0.7)'; ctx.lineWidth=1.8; // Thicker, more visible drops
+            
+            particles.forEach(p => {
+                p.vy += gravity; // Apply gravity
+                p.vx *= 0.99; // Slight air resistance for horizontal
+                p.x += p.vx;
+                p.y += p.vy;
+                
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p.x - p.vx*0.5, p.y - p.vy*0.5); // Draw line in direction of movement
+                ctx.stroke();
+
+                if (p.y > canvas.height * (0.95 + Math.random()*0.05)) { // Hit ground
+                    for(let i=0; i<3; i++) { // Fewer, more distinct splashes
+                        p.splashes.push({sx:p.x, sy:p.y, svx: (Math.random()-0.5)*3, svy: -Math.random()*5, sr: 2, so:0.8});
+                    }
+                    // Reset raindrop
+                    p.y = -p.length - Math.random() * 50; 
+                    p.x = Math.random()*canvas.width;
+                    p.vx = windX + (Math.random()-0.5)*0.8;
+                    p.vy = Math.random()*8+12;
+                }
+
+                p.splashes.forEach((s,i) => {
+                    ctx.fillStyle = `rgba(174,194,224, ${s.so})`;
+                    ctx.beginPath(); ctx.arc(s.sx, s.sy, s.sr, 0, Math.PI*2); ctx.fill();
+                    s.sx += s.svx; s.sy += s.svy; s.svy += gravity; s.so -= 0.05; // Fade quicker
+                    if(s.so <= 0) p.splashes.splice(i, 1);
+                });
+            });
+            animationFrameId = requestAnimationFrame(draw);
+        }
+        draw();
+    }
+    
+    function animateThunderstorm(args) {
+        args.is_day = 0; // Force night for thunderstorm
+        let lastLightningTime = 0;
+        let lightningOpacity = 0; // For ambient light from lightning
+        const rainArgs = {...args, wind_kph: (args.wind_kph || 0) + 20 }; // Heavier wind for rain
+
+        // Particles for heavy rain
+        let rainParticles = Array.from({length: 400}, () => ({
+            x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+            length: Math.random()*20 + 15,
+            vx: (rainArgs.wind_kph * 0.1) + (Math.random()-0.5)*1.5,
+            vy: Math.random()*10+15,
+            splashes: []
+        }));
+        const gravity = 0.7;
+
+        function draw() {
+            drawSkyAndCelestialBody(args); // Dark sky
+            
+            // Apply ambient lightning glow
+            if(lightningOpacity > 0) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${lightningOpacity})`;
+                ctx.fillRect(0,0,canvas.width,canvas.height);
+                lightningOpacity = Math.max(0, lightningOpacity - 0.05); // Fade out quickly
+            }
+
+            // Draw heavy rain
+            ctx.strokeStyle='rgba(174,194,224,0.8)'; ctx.lineWidth=2;
+            rainParticles.forEach(p => {
+                p.vy += gravity; p.x += p.vx; p.y += p.vy;
+                ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x - p.vx*0.5, p.y - p.vy*0.5); ctx.stroke();
+                if (p.y > canvas.height + 10) { p.y = -p.length - Math.random()*50; p.x = Math.random()*canvas.width; p.vx = (rainArgs.wind_kph * 0.1) + (Math.random()-0.5)*1.5; p.vy = Math.random()*10+15; }
+            });
+
+            const now = Date.now();
+            if(now - lastLightningTime > 6000 + Math.random() * 10000) { // Less frequent, more impactful
+                drawLightningBolt();
+                lightningOpacity = 0.4 + Math.random() * 0.3; // Brighter ambient flash
+                lastLightningTime = now;
+            }
+            animationFrameId = requestAnimationFrame(draw);
+        }
+
+        function drawLightningBolt() {
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+            ctx.shadowBlur = 15;
+
+            let startX = Math.random() * canvas.width * 0.6 + canvas.width * 0.2;
+            let startY = 0;
+            let path = [{x: startX, y: startY}];
+
+            function createFork(currentX, currentY, length, angle, forks) {
+                if (length < 5) return;
+                
+                let endX = currentX + Math.cos(angle) * length;
+                let endY = currentY + Math.sin(angle) * length;
+                
+                path.push({x: endX, y: endY});
+
+                if (forks > 0 && Math.random() < 0.6) { // Chance to fork
+                    createFork(endX, endY, length * (0.6 + Math.random()*0.2), angle - 0.5, forks - 1);
+                    createFork(endX, endY, length * (0.6 + Math.random()*0.2), angle + 0.5, forks - 1);
+                }
+            }
+
+            // Main bolt
+            createFork(startX, startY, canvas.height * 0.2, Math.PI / 2 + (Math.random()-0.5)*0.5, 3);
+            
+            ctx.beginPath();
+            ctx.moveTo(path[0].x, path[0].y);
+            path.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.stroke();
+
+            ctx.shadowBlur = 0; // Reset shadow
+        }
+        draw();
+    }
+
+    function animateSnow(args) {
+        const windX = (args.wind_kph || 0) * 0.05;
+        const gravity = 0.1;
+        let particles = Array.from({length:200},(_, i)=>({ // Fewer particles for performance
+            x:Math.random()*canvas.width, y:Math.random()*canvas.height,
+            r:Math.random()*2 + 1, // Sizes for depth
+            vx: windX + (Math.random()-0.5)*0.5,
+            vy: Math.random()*0.8 + 0.5,
+            swing: Math.random() * Math.PI * 2,
+            swingSpeed: Math.random() * 0.01 + 0.005, // Slower swing
+            opacity: Math.random() * 0.5 + 0.5 // Varied opacity
+        }));
+        
+        function draw(){
+            drawSkyAndCelestialBody(args);
+            
+            particles.forEach(p => {
+                p.x += p.vx + Math.sin(p.swing) * 0.5; // Smoother horizontal sway
+                p.y += p.vy + gravity;
+                p.swing += p.swingSpeed;
+                
+                ctx.fillStyle=`rgba(255, 255, 255, ${p.opacity})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (p.y > canvas.height + p.r) {
+                    p.x = Math.random() * canvas.width;
+                    p.y = -p.r;
+                }
+                if(p.x > canvas.width + p.r) p.x = -p.r;
+                if(p.x < -p.r) p.x = canvas.width + p.r;
+            });
+            animationFrameId = requestAnimationFrame(draw);
+        }
+        draw();
+    }
+    
+    function animateFog(args) {
+        const fogColor = args.is_day ? 'rgba(255,255,255,0.4)' : 'rgba(120,130,150,0.3)';
+        let particles = Array.from({length:30},()=>({ // Fewer, larger fog patches
+            x:Math.random()*canvas.width,y:Math.random()*canvas.height,
+            r:Math.random()*150+100, // Larger radius
+            s:Math.random()*0.05+0.02 // Slower drift
+        }));
+        function draw() {
+            drawSkyAndCelestialBody(args);
+            particles.forEach(p => {
+                const grd = ctx.createRadialGradient(p.x, p.y, p.r * 0.2, p.x, p.y, p.r);
+                grd.addColorStop(0, fogColor.replace(/, ?\d+\.?\d*\)/, `, 0.6)`)); // Denser center
+                grd.addColorStop(1, fogColor.replace(/, ?\d+\.?\d*\)/, `, 0)`)); // Transparent edges
+
+                ctx.fillStyle=grd; 
+                ctx.beginPath(); 
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); 
+                ctx.fill();
+                p.x += p.s;
+                if (p.x > canvas.width + p.r) p.x = -p.r;
+            });
+            animationFrameId = requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+    // ====== INITIALIZE APP ======
+    startApp();
+});
+</script>
+</body>
+</html>
