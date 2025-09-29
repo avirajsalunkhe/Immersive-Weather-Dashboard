@@ -1,88 +1,76 @@
-Immersive Weather Dashboard
+# Immersive Weather Dashboard
+
 A visually stunning, real-time weather dashboard that provides current conditions, hourly forecasts, and a 7-day outlook. The application features fully dynamic, physics-based animated backgrounds that change to match the live weather, creating an immersive and beautiful user experience.
 
-Live Demo: https://your-site-name.netlify.app/ (Replace with your actual Netlify link)
+## 🌐 Live Demo
+[Live Demo](https://live-wether-app.netlify.app/) 
 
-✨ Features
-Real-time Weather Data: Fetches live data for any location, including temperature, "feels like," humidity, wind speed, and UV index.
+---
 
-Comprehensive Forecasts: Displays a 24-hour hourly forecast and a detailed 7-day forecast.
+## ✨ Features
+- **Real-time Weather Data**: Fetches live data for any location, including temperature, "feels like," humidity, wind speed, and UV index.  
+- **Comprehensive Forecasts**: Displays a 24-hour hourly forecast and a detailed 7-day forecast.  
+- **Dynamic Animated Backgrounds**: Fully immersive backgrounds that adapt to live weather conditions:  
+  - ☀️ Clear/Sunny: A bright, clear sky with a tracked sun.  
+  - 🌙 Clear Night: A dark sky with twinkling stars and a visible moon.  
+  - ☁️ Cloudy/Overcast: Smoothly drifting volumetric clouds.  
+  - 🌧️ Rain: Physics-based raindrops with splash effects.  
+  - ⛈️ Thunderstorm: Heavy rain with dramatic lightning flashes.  
+  - ❄️ Snow: Graceful, parallax snowflakes.  
+  - 🌫️ Fog/Mist: Dense, moving fog patches.  
+- **Accurate Day/Night Cycle**: Tracks sun and moon based on sunrise and sunset times with twilight transitions.  
+- **Automatic Geolocation**: Instantly detects user’s location.  
+- **Manual City Search**: Search weather for any city worldwide.  
+- **Fully Responsive Design**: Optimized for desktop, tablet, and mobile.  
+- **Modern UI**: Clean, glassmorphism-style cards.  
 
-Dynamic Animated Backgrounds: The entire background animates to reflect the current weather conditions:
+---
 
-☀️ Clear/Sunny: A bright, clear sky with a tracked sun.
+## 🛠️ Technologies Used
+- **Frontend**: HTML5, CSS3, JavaScript (ES6+)  
+- **Styling**: Tailwind CSS  
+- **API**: [WeatherAPI.com](https://www.weatherapi.com/) for real-time data  
 
-🌙 Clear Night: A dark sky filled with gently twinkling stars and a visible moon.
+---
 
-☁️ Cloudy/Overcast: Soft, volumetric clouds drift smoothly across the sky.
+## 🚀 Getting Started
 
-🌧️ Rain: Physics-based raindrops fall, influenced by wind speed, and create a splash effect.
+### Prerequisites
+A modern web browser (Chrome, Firefox, Safari, etc.).
 
-⛈️ Thunderstorm: A dark, stormy scene with heavy rain and dramatic lightning flashes.
+### Installation & Setup
+1. **Clone the repository**  
+   ```bash
+   git clone https://github.com/avirajsalunkhe/immersive-weather-dashboard.git
+   ```
+2. **Get your free API Key**  
+   - Sign up at [WeatherAPI.com](https://www.weatherapi.com/signup.aspx).  
+   - Copy your API key from the dashboard.  
+3. **Add the API Key**  
+   - Open `index.html`.  
+   - Find this line:  
+     ```javascript
+     const API_KEY = 'YOUR_API_KEY_HERE'; // <-- PASTE YOUR WeatherAPI.com KEY HERE
+     ```  
+   - Replace `'YOUR_API_KEY_HERE'` with your actual API key.  
+4. **Run the application**  
+   - Open `index.html` in your browser.  
 
-❄️ Snow: Graceful snowflakes drift down, influenced by wind, creating a parallax effect for depth.
+---
 
-🌫️ Fog/Mist: Dense, slowly moving fog patches create an atmospheric effect.
+## 🌐 Deployment
 
-Accurate Day/Night Cycle: The animation system tracks the sun and moon based on local sunrise and sunset times, with beautiful gradient transitions for twilight hours.
+### Deploying to Netlify
+1. Ensure your main file is named `index.html`.  
+2. Go to [Netlify](https://www.netlify.com/).  
+3. Drag and drop your project folder into the deploy area.  
+4. Your site will be live within seconds!  
 
-Automatic Geolocation: Detects the user's location on page load to provide instant local weather.
+You can also deploy via **Vercel** or **GitHub Pages**.
 
-Manual City Search: Allows users to search for weather information for any city worldwide.
+---
 
-Fully Responsive Design: The interface is optimized for a seamless experience on desktops, tablets, and mobile devices.
+## ©️ Copyright
+This project is created and maintained by **Aviraj Salunkhe**.  
 
-Modern UI: A clean and intuitive user interface with glassmorphism-style cards.
-
-🛠️ Technologies Used
-Frontend: HTML5, CSS3, JavaScript (ES6+)
-
-Styling: Tailwind CSS
-
-API: WeatherAPI.com for real-time weather data.
-
-🚀 Getting Started
-To get a local copy up and running, follow these simple steps.
-
-Prerequisites
-You need a modern web browser like Google Chrome, Firefox, or Safari.
-
-Installation & Setup
-Clone the repository:
-
-git clone [https://github.com/avirajsalunkhe/immersive-weather-dashboard.git](https://github.com/avirajsalunkhe/immersive-weather-dashboard.git)
-
-Get your free API Key:
-
-Go to WeatherAPI.com and sign up for a free account.
-
-You will get an API key on your dashboard.
-
-Add the API Key to the project:
-
-Open the index.html file in your code editor.
-
-Find the following line in the <script> section (around line 230):
-
-const API_KEY = 'YOUR_API_KEY_HERE'; // <-- PASTE YOUR WeatherAPI.com KEY HERE
-
-Replace 'YOUR_API_KEY_HERE' with the key you obtained from WeatherAPI.
-
-Run the application:
-
-Simply open the index.html file in your web browser.
-
-🌐 Deployment
-This project can be easily deployed using services like Netlify, Vercel, or GitHub Pages.
-
-Deploying to Netlify
-Prepare your file: Ensure your main HTML file is named index.html.
-
-Drag & Drop: Go to your Netlify dashboard and simply drag the project folder (containing index.html) into the deploy area.
-
-Your site will be live in a few seconds!
-
-©️ Copyright
-This project is created and maintained by Aviraj Salunkhe.
-
-© 2025 Aviraj Salunkhe. All Rights Reserved.
+© 2025 [Aviraj Salunkhe](https://www.github.com/avirajsalunkhe/). All Rights Reserved.  
