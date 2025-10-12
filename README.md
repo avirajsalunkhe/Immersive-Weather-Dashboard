@@ -58,7 +58,7 @@ A modern web browser (Chrome, Firefox, Safari, etc.).
 
 ---
 
-## 🌐 Deployment
+## 🌐 Deployment:
 
 ### Deploying to Netlify
 1. Ensure your main file is named `index.html`.  
