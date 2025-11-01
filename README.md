@@ -25,7 +25,7 @@ A visually stunning, real-time weather dashboard that provides current condition
 - **Modern UI**: Clean, glassmorphism-style cards.  
 
 ---
-
+ 
 ## 🛠️ Technologies Used:
 - **Frontend**: HTML5, CSS3, JavaScript (ES6+)  
 - **Styling**: Tailwind CSS  
