@@ -68,7 +68,7 @@ A modern web browser (Chrome, Firefox, Safari, etc.).
 
 You can also deploy via **Vercel** or **GitHub Pages**.
 
---- 
+---
 
 ## ©️ Copyright
 This project is created and maintained by **Aviraj Salunkhe**.  
