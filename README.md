@@ -70,7 +70,7 @@ You can also deploy via **Vercel** or **GitHub Pages**.
 
 ---
 
-## ©️ Copyright
+## ©️ Copyright 
 This project is created and maintained by **Aviraj Salunkhe**.  
 
 © 2025 [Aviraj Salunkhe](https://www.github.com/avirajsalunkhe/). All Rights Reserved.  
