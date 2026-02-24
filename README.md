@@ -34,7 +34,7 @@ A visually stunning, real-time weather dashboard that provides current condition
 ---
 
 ## 🚀 Getting Started
-
+ 
 ### Prerequisites
 A modern web browser (Chrome, Firefox, Safari, etc.).
 
