@@ -32,7 +32,7 @@ A visually stunning, real-time weather dashboard that provides current condition
 - **API**: [WeatherAPI.com](https://www.weatherapi.com/) for real-time data  
 
 ---
-
+ 
 ## 🚀 Getting Started
  
 ### Prerequisites
