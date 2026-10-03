@@ -1,6 +1,6 @@
 # Immersive Weather Dashboard
 
-A visually stunning, real-time weather dashboard that provides current conditions, hourly forecasts, and a 7-day outlook. The application features fully dynamic, physics-based animated backgrounds that change to match the live weather, creating an immersive and beautiful user experience.
+A visually stunning, real-time weather dashboard that provides current conditions, hourly forecasts, and a 7-day outlook. The application features fully dynamic, physics-based animated backgrounds that change to match the live weather, creating an immersive and beautiful user experience. 
 
 ## 🌐 Live Demo
 [Live Demo](https://live-wether-app.netlify.app/) 
@@ -22,7 +22,7 @@ A visually stunning, real-time weather dashboard that provides current condition
 - **Automatic Geolocation**: Instantly detects user’s location.  
 - **Manual City Search**: Search weather for any city worldwide.  
 - **Fully Responsive Design**: Optimized for desktop, tablet, and mobile.  
-- **Modern UI**: Clean, glassmorphism-style cards.  
+- **Modern UI**: Clean, glassmorphism-style cards. 
 
 --- 
  
@@ -36,7 +36,7 @@ A visually stunning, real-time weather dashboard that provides current condition
 ## 🚀 Getting Started
  
 ### Prerequisites
-A modern web browser (Chrome, Firefox, Safari, etc.).
+A modern web browser (Chrome, Firefox, Safari, Edge, etc.).
 
 ### Installation & Setup
 1. **Clone the repository**  
